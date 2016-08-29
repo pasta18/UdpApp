@@ -519,3 +519,4 @@ test-results/
 *.obj
 *.suo
 UnityChan.png
+output_log.txt
