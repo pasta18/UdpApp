@@ -513,10 +513,11 @@ test-results/
 #############
 ## More
 #############
-
+*.unity
 *.exe
 *.dll
 *.obj
 *.suo
 UnityChan.png
-output_log.txt
+/ProjectSettings
+/test_Data
