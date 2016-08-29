@@ -24,26 +24,35 @@ public class UdpDataClient
 
     public UdpDataClient(bool isServer, int packetSize = 1024)
     {
+        //Debug.Log("Create");
         this.isServer = isServer;
         PACKET_SIZE = packetSize;
         packet = new byte[PACKET_SIZE];
 
         sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+        RunWorkAsync(8000);
     }
 
     // 非同期通信の開始
     public void RunWorkAsync(int port, IPAddress ipAddress = null)
     {
+        isRunningWork = true;
+
+        //Debug.Log("RunWork");
+
         if (isServer) // サーバー側
         {
             runWorkThread = new Thread(new ThreadStart(() =>
             {
-                var local = new IPEndPoint(IPAddress.Any, 8000);
-                var remote = new IPEndPoint(IPAddress.Any, 8000) as EndPoint;
+                var local = new IPEndPoint(IPAddress.Any, port);
+                var remote = new IPEndPoint(IPAddress.Any, port) as EndPoint;
                 sock.Bind(local);
+
+                //Debug.Log("Server");
 
                 while (isRunningWork)
                 {
+                    //Debug.Log("Run");
                     var length = sock.ReceiveFrom(packet, ref remote);
                     var data = Encoding.UTF8.GetString(packet);
 
@@ -60,20 +69,23 @@ public class UdpDataClient
                 if (ipAddress == null) address = IPAddress.Loopback;
                 else address = ipAddress;
 
-                var remote = new IPEndPoint(address, 8000);
+                var remote = new IPEndPoint(address, port);
 
-                sock.Bind(remote);
+                //Debug.Log("Client");
 
                 while (isRunningWork)
                 {
                     if(isSend)
                     {
+                        //Debug.Log("Send");
                         sock.SendTo(packet, remote);
                         isSend = false;
                     }
                 }
             }));
         }
+
+        runWorkThread.Start();
     }
     // 受け取ったときの動作
     private void OnReceive(string data)
@@ -91,7 +103,17 @@ public class UdpDataClient
         if (isRunningWork)
         {
             isRunningWork = false;
-            runWorkThread.Join();
+
+            if (!isServer)
+            {
+                runWorkThread.Join();
+            }
+            else
+            {
+                UdpDataClient udp = new UdpDataClient(false);
+                udp.Send("Exit");
+                udp.EndSocket();
+            }
         }
         if (sock != null)
         {
